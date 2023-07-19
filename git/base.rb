@@ -37,9 +37,7 @@ module Git
     end
 
     def cmd(cmd_string)
-      hash = %i(result error status).zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
-      %w(result error status).each { |key| hash[key] = hash[key.to_sym] }
-      hash
+      %w(result error status).zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
     end
 
     def status

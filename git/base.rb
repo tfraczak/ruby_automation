@@ -21,7 +21,7 @@ module Git
     end
 
     def inspect
-      "#{super.split('@').first.strip}>"
+      super.split("@").first.strip
     end
 
     private

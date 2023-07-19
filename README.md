@@ -1,6 +1,9 @@
 # Objective
 The aim of this project is to utilize Ruby code to automate some frequently used commands. For example: `git`.
 
+# Future Changes
+- Probably should redo how the ruby code is executed to run the specific commands.
+
 # Git
 The `Git` module enables the user to automate basic git commands. For example, if you'd like to commit all your current work, you can the following bash alias to commit all your work and have the ruby code ask for a commit subject, a detailed commit body, and automatically appends the Jira link based on the branch name:
 ```shell

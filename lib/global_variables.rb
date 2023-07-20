@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require "byebug"
 require "yaml"
 require "symbolized"
 
 # This class is meant to read the yml file for global variables to be used in other files
 class GlobalVariables
-  YML = YAML.load_file("#{Dir.pwd}/lib/globals.yml").to_symbolized_hash
+  YML = YAML.load_file(File.expand_path("globals.yml", File.dirname(__FILE__))).to_symbolized_hash
 
   def self.[](key)
     YML[key]

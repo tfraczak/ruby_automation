@@ -2,8 +2,9 @@
 
 require "open3"
 require "symbolized"
+require "dry-inflector"
 
-Dir[File.join(__dir__, "../lib", "*.rb")].sort.each { |file| require_relative file }
+Dir[File.join(__dir__, "../lib", "*.rb")].each { |file| require_relative file }
 
 module Git
   # Base class for other Git classes to inherit from
@@ -14,7 +15,8 @@ module Git
     include SystemOutput
 
     def initialize
-      run_validations!
+      validate_project_path
+      validate_dev_initials
       @input = $stdin
       @output = $stdout
       @pci_path = GlobalVariables["pci_path"]
@@ -27,6 +29,10 @@ module Git
     private
 
     attr_reader :input, :pci_path, :output
+
+    def inflector
+      @inflector ||= Dry::Inflector.new
+    end
 
     def git(command)
       cmd("git -C #{pci_path} #{command}")
@@ -50,11 +56,6 @@ module Git
 
     def pod_names
       @pod_names ||= GlobalVariables[:pod_names].sort
-    end
-
-    def run_validations!
-      validate_project_path
-      validate_dev_initials
     end
 
     def validate_project_path

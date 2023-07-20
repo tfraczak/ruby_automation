@@ -1,25 +1,25 @@
 # frozen_string_literal: true
 
-require_relative "branch"
 require_relative "base"
+require_relative "branch"
 
 module Git
   # The commit class is for auto generating commit messages.
   class Commit < Base
-    def self.call
-      new.run
-    end
-
-    def self.amend
-      new.amend
-    end
-
     def initialize
       super
       @branch = Branch.new
       split_branch = branch_name.split("-")
       @pod_name = split_branch[1].upcase
       @jira_number = split_branch[2]
+    end
+
+    def self.call
+      new.run
+    end
+
+    def self.amend
+      new.amend
     end
 
     def run
@@ -128,7 +128,7 @@ module Git
     end
 
     def github_jira_link
-      "### [#{pod_name}](#{jira_link})"
+      "### [#{pod_name}-#{jira_number}](#{jira_link})"
     end
 
     def jira_link

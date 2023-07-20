@@ -23,10 +23,11 @@ module Git
 
     def create_branch
       checkout_main
-      pull
+      git "pull"
       ask_for_pod_name
       ask_for_jira_number
       ask_for_descriptor
+      setup_branch
       build_branch
     end
 
@@ -45,7 +46,7 @@ module Git
       pattern = /#{pattern_strings.join('|')}/i
 
       branches.
-        select { |branch_name| branch_name.match?(pattern) }.
+        grep(pattern).
         each { |branch_name| destroy_branch(branch_name) }
 
       nil
@@ -105,10 +106,6 @@ module Git
       error("Checking out 'main' branch failed!", exit: true)
     end
 
-    def pull
-      git "pull"
-    end
-
     def changes?
       status[:result].match?(/no changes added to commit/)
     end
@@ -164,6 +161,14 @@ module Git
 
     def switching_with_changes_validation
       error("Cannot switch branches, please commit or stash changes", exit: true) if changes?
+    end
+
+    def setup_branch
+      cmd "bundle check || bundle install"
+      cmd "rails db:migrate"
+      cmd "yarn install"
+      git "stash"
+      git "stash clear"
     end
   end
 end

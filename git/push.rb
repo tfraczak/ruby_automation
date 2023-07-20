@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "dry/inflector"
+require "byebug"
+require "pathname"
 require_relative "branch"
 require_relative "commit"
 
@@ -9,6 +12,7 @@ module Git
     BUNDLE = "bundle"
     BRAKEMAN = "brakeman"
     RUBOCOP = "rubocop"
+    YARN_LINT = "yarn lint"
 
     def self.call
       new.run
@@ -18,6 +22,10 @@ module Git
       new.amend_and_push
     end
 
+    def self.validate_work
+      new.run_checks!
+    end
+
     def initialize
       super
       @branch = Branch.new
@@ -25,54 +33,44 @@ module Git
     end
 
     def run
-      bundle_install
-      run_brakeman
-      run_rubocop
-      all_checks_pass
+      run_checks!
       push
     end
 
     def amend_and_push
-      bundle_install
-      run_brakeman
-      run_rubocop
-      all_checks_pass
+      run_checks!
       Commit.amend
       @force = true
       push
+    end
+
+    def run_checks!
+      GlobalVariables[:checks].each { |check| send("run_#{check}") }
+      all_checks_pass
     end
 
     private
 
     attr_reader :branch, :force
 
-    def warn_and_get_result(check_name)
-      warning("Running #{check_name}...")
-
-      cmd("#{pci_path}/bin/#{check_name}")[:result]
-    end
-
-    def titleize(text)
-      text[0].upcase + text[1..]
-    end
-
     def success_output(check_name, message)
       puts message unless message.empty?
       suffix = check_name == BUNDLE ? "complete" : "passed"
-      success("#{titleize(check_name)} #{suffix}!")
+      success("#{inflector.humanize(check_name)} #{suffix}!")
       true
     end
 
     def error_output(check_name, message)
       puts message unless message.empty?
-      error("#{titleize(check_name)} failed!", exit: true)
+      error("#{inflector.humanize(check_name)} failed!", exit: true)
     end
 
-    def bundle_install
+    def run_bundle_install
       warning("Bundling...")
-      check = cmd("bundle check")[:result]
+      check = cmd("#{pci_path}/bin/bundle check")[:result]
       return success_output(BUNDLE, "") if check.match?(/The Gemfile's dependencies are satisfied/)
 
+      response = cmd("#{pci_path}/bin/bundle install")
       install = response[:result]
       error_message = response[:error]
 
@@ -84,8 +82,8 @@ module Git
     end
 
     def run_brakeman
-      result = warn_and_get_result(BRAKEMAN)
-
+      warning("Running #{BRAKEMAN}...")
+      result = cmd("#{pci_path}/bin/brakeman #{pci_path}")[:result]
       if result.match?(/No warnings found/)
         success_output(BRAKEMAN, result.split("\n")[-1])
       else
@@ -94,9 +92,9 @@ module Git
     end
 
     def run_rubocop
-      result = warn_and_get_result(RUBOCOP)
-
-      message = result.split("...")[-1].strip.gsub(/^(\.|\^)+/, "").strip
+      warning("Running #{RUBOCOP}...")
+      result = cmd("#{pci_path}/bin/rubocop")[:result]
+      message = result.split("...")[-1]&.strip&.gsub(/^(\.|\^)+/, "")&.strip
       if result.match?(/no offenses detected/)
         success_output(RUBOCOP, message.split("\n")[0])
       else
@@ -130,8 +128,35 @@ module Git
     def all_checks_pass
       success("All checks pass! ✅")
     end
+
+    def run_yarn_lint
+      return success_output(YARN_LINT, "") unless javascript_files_with_changes.length.positive?
+
+      warning("Running #{YARN_LINT}...")
+      response = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
+      result = response[:result]
+      error = response[:error]
+      error_output(YARN_LINT, result) if error.match?(/error Command failed with exit code 1/)
+
+      messages = result.split("\n")
+      success_output(YARN_LINT, "#{messages[0]} - #{messages[-1]}")
+    end
+
+    def javascript_files_with_changes
+      result = git("status")[:result]
+      result.
+        split("\n").
+        map(&:strip).
+        grep(/^modified:.+\.js(x?)$/).
+        map { |text| "#{pci_path}/#{text.gsub(/^modified:\s+/, '')}" }
+    end
+
+    def relative_path_to_pci
+      Pathname.new(".").relative_path_from(Pathname.new(pci_path)).to_s
+    end
   end
 end
 
 Git::Push.call if ENV.fetch("PUSH", nil)
+Git::Push.validate_work if ENV.fetch("VALIDATE_WORK", nil)
 Git::Push.amend_and_push if ENV.fetch("AMEND_AND_PUSH", nil)

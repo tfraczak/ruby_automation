@@ -4,4 +4,8 @@ colors:
   red: "\e[0;31m"
   green: "\e[0;32m"
   yellow: "\e[0;33m"
+main_branch: main
 pci_path: ~/code/patient-check-in
+pod_names:
+  - eci
+  - pod

@@ -110,7 +110,7 @@ module Git
         warning_message = format_github_warning(response[:error])
         warning(warning_message)
       end
-
+      # need to find a way to check for an error when a push fails
       result = response[:result].chomp.strip
       output.puts result unless result.empty?
       success("Pushed work!")

@@ -70,13 +70,13 @@ module Git
     def validate_main_branch_commit!
       return unless branch.main?
 
-      error("Cannot commit to 'main' branch", exit: true)
+      error("Cannot commit to '#{main_branch_name}' branch", exit: true)
     end
 
     def validate_branch_name_pattern!
       return if branch.jira_pattern?
 
-      error("Branch name must follow pattern: #{dev_initials}-(eci|pod)-###-descriptor", exit: true)
+      error("Branch name must follow pattern: #{dev_initials}-(#{pod_names.join('|')})-###-descriptor", exit: true)
     end
 
     def validate_git_status!

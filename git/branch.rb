@@ -41,7 +41,7 @@ module Git
 
     def prune(*pattern_strings)
       checkout_main
-      pattern_strings.reject! { |str| str.match(/^main$/) }
+      pattern_strings.reject! { |str| str.match(/^#{main_branch_name}$/) }
       pattern = /#{pattern_strings.join('|')}/i
 
       branches.
@@ -62,11 +62,11 @@ module Git
     end
 
     def main?
-      current.match?(/^main$/)
+      current.match?(/^#{main_branch_name}$/)
     end
 
     def jira_pattern?
-      current.match?(/^#{dev_initials}-(pod|eci)-[0-9]+(-[a-zA-Z0-9]+((-[a-zA-Z0-9]+)+)?)?$/i)
+      current.match?(/^#{dev_initials}-(#{pod_names.join("|")})-[0-9]+(-[a-zA-Z0-9]+((-[a-zA-Z0-9]+)+)?)?$/i)
     end
 
     private
@@ -90,7 +90,7 @@ module Git
       git("branch")[:result].
         split("\n").
         map { _1.strip.gsub(/^\*\s+/, "") }.
-        reject { _1.match?(/^main$/) }
+        reject { _1.match?(/^#{main_branch_name}$/) }
     end
 
     def checkout_main
@@ -98,9 +98,9 @@ module Git
 
       switching_with_changes_validation
 
-      response = git "checkout main"
+      response = git "checkout #{main_branch_name}"
       return unless response[:error]
-      return if response[:error].match?(/Switched to branch 'main'|Already on 'main'/)
+      return if response[:error].match?(/Switched to branch '#{main_branch_name}'|Already on '#{main_branch_name}'/)
 
       error("Checking out 'main' branch failed!", exit: true)
     end
@@ -117,10 +117,14 @@ module Git
       @pod_name = ""
 
       until valid_pod_name?
-        output.print "Enter pod name (eci or pod): "
+        output.print "Enter pod name (#{pod_text}): "
         @pod_name = input.gets.chomp.strip
-        error("Must be 'eci' or 'pod'") unless valid_pod_name?
+        error("Must be #{pod_text}") unless valid_pod_name?
       end
+    end
+
+    def pod_text
+      pod_names.length > 2 ? "#{pod_names[0...-1].join(', ')}, or #{pod_names[-1]}" : pod_names.join(" or ")
     end
 
     def ask_for_jira_number
@@ -141,7 +145,7 @@ module Git
     end
 
     def valid_pod_name?
-      pod_name.match?(/^(pod|eci)$/i)
+      pod_name.match?(/^(#{pod_names.join("|")})$/i)
     end
 
     def valid_jira_number?

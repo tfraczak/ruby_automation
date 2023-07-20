@@ -44,6 +44,14 @@ module Git
       git "status"
     end
 
+    def main_branch_name
+      GlobalVariables[:main_branch]
+    end
+
+    def pod_names
+      @pod_names ||= GlobalVariables[:pod_names].sort
+    end
+
     def run_validations!
       validate_project_path
       validate_dev_initials

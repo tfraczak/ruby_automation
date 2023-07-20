@@ -1,8 +1,15 @@
 # Objective
 The aim of this project is to utilize Ruby code to automate some frequently used commands. For example: `git`.
 
+# Installation
+1. Clone the repo.
+2. `cd` into the directory where you cloned it.
+3. Run `bundle install`.
+4. Change the values in the `./lib/globals.yml` file to suit your own needs.
+
 # Future Changes
 - Probably should redo how the ruby code is executed to run the specific commands.
+- Abstract more of the hardcoded values for automating git commands into the `./lib/globals.yml` file.
 
 # Git
 The `Git` module enables the user to automate basic git commands. For example, if you'd like to commit all your current work, you can the following bash alias to commit all your work and have the ruby code ask for a commit subject, a detailed commit body, and automatically appends the Jira link based on the branch name:

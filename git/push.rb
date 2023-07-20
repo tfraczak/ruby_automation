@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dry/inflector"
-require "byebug"
 require "pathname"
 require_relative "branch"
 require_relative "commit"

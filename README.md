@@ -9,7 +9,7 @@ The aim of this project is to utilize Ruby code to automate some frequently used
 5. Make sure you are in your `patient-check-in` project directory for these to work as intended. It seems like if you try to run the commands from anywhere, it tries to look for local configurations with respect to the current directory you're in.
 
 # Future Changes
-- Probably should redo how the ruby code is executed to run the specific commands.
+- Probably should redo how the ruby code is executed to run the specific commands. Perhaps create ruby scripts that import the classes and execute the code.
 - Abstract more of the hardcoded values for automating git commands into the `./lib/globals.yml` file.
 
 # Git

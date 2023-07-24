@@ -6,6 +6,7 @@ The aim of this project is to utilize Ruby code to automate some frequently used
 2. `cd` into the directory where you cloned it.
 3. Run `bundle install`.
 4. Change the values in the `./lib/globals.yml` file to suit your own needs.
+5. Make sure you are in your `patient-check-in` project directory for these to work as intended. It seems like if you try to run the commands from anywhere, it tries to look for local configurations with respect to the current directory you're in.
 
 # Future Changes
 - Probably should redo how the ruby code is executed to run the specific commands.

@@ -128,10 +128,11 @@ module Git
       success("All checks pass! ✅")
     end
 
+    # rubocop:disable Metrics/AbcSize
     def run_yarn_lint
+      warning("Running #{YARN_LINT}...")
       return success_output(YARN_LINT, "") unless javascript_files_with_changes.length.positive?
 
-      warning("Running #{YARN_LINT}...")
       response = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
       result = response[:result]
       error = response[:error]
@@ -140,6 +141,7 @@ module Git
       messages = result.split("\n")
       success_output(YARN_LINT, "#{messages[0]} - #{messages[-1]}")
     end
+    # rubocop:enable Metrics/AbcSize
 
     def javascript_files_with_changes
       result = git("status")[:result]

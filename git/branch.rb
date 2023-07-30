@@ -172,6 +172,3 @@ module Git
     end
   end
 end
-
-Git::Branch.create_branch if ENV.fetch("NEW_BRANCH", nil)
-Git::Branch.prune if ENV.fetch("PRUNE", nil)

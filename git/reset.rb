@@ -19,5 +19,3 @@ module Git
     end
   end
 end
-
-Git::Reset.reset_to_previous_commit if ENV.fetch("RESET_TO_PREV", nil)

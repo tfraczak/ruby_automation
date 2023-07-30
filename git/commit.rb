@@ -120,7 +120,7 @@ module Git
 
     def ask_for_message
       output.print "Message: "
-      @message = input.gets.chomp.strip
+      @message = input.gets.chomp.strip.split('\n').join("\n")
     end
 
     def validate_message!
@@ -128,7 +128,7 @@ module Git
     end
 
     def github_jira_link
-      "### [#{pod_name}-#{jira_number}](#{jira_link})"
+      "\#\#\# [#{pod_name}-#{jira_number}]\(#{jira_link}\)"
     end
 
     def jira_link
@@ -140,5 +140,3 @@ module Git
     end
   end
 end
-
-Git::Commit.call if ENV.fetch("COMMIT", nil)

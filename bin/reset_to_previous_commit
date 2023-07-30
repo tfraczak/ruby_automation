@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require_relative "../git/reset"
+
+Git::Reset.reset_to_previous_commit

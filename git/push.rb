@@ -157,7 +157,3 @@ module Git
     end
   end
 end
-
-Git::Push.call if ENV.fetch("PUSH", nil)
-Git::Push.validate_work if ENV.fetch("VALIDATE_WORK", nil)
-Git::Push.amend_and_push if ENV.fetch("AMEND_AND_PUSH", nil)

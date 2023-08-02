@@ -22,7 +22,8 @@ module Git
     end
 
     def self.validate_work
-      new.run_checks!
+      instance = new
+      instance.run_checks! if instance.checkable_file_changes?
     end
 
     def initialize
@@ -32,12 +33,12 @@ module Git
     end
 
     def run
-      run_checks!
+      run_checks! if checkable_file_changes?
       push
     end
 
     def amend_and_push
-      run_checks!
+      run_checks! if checkable_file_changes?
       Commit.amend
       @force = true
       push
@@ -46,6 +47,10 @@ module Git
     def run_checks!
       GlobalVariables[:checks].each { |check| send("run_#{check}") }
       all_checks_pass
+    end
+
+    def checkable_file_changes?
+      ruby_files_with_changes.length.positive? || javascript_files_with_changes.length.positive?
     end
 
     private
@@ -81,6 +86,8 @@ module Git
     end
 
     def run_brakeman
+      return unless ruby_files_with_changes.length.positive?
+
       warning("Running #{BRAKEMAN}...")
       result = cmd("#{pci_path}/bin/brakeman #{pci_path}")[:result]
       if result.match?(/No warnings found/)
@@ -90,7 +97,10 @@ module Git
       end
     end
 
+    # rubocop:disable Metrics/AbcSize
     def run_rubocop
+      return unless ruby_files_with_changes.length.positive?
+
       warning("Running #{RUBOCOP}...")
       result = cmd("#{pci_path}/bin/rubocop")[:result]
       message = result.split("...")[-1]&.strip&.gsub(/^(\.|\^)+/, "")&.strip
@@ -100,6 +110,7 @@ module Git
         error_output(RUBOCOP, "\n#{message}")
       end
     end
+    # rubocop:enable Metrics/AbcSize
 
     def push
       response = git(force ? "push origin HEAD --force-with-lease" : "push origin HEAD")
@@ -128,11 +139,10 @@ module Git
       success("All checks pass! ✅")
     end
 
-    # rubocop:disable Metrics/AbcSize
     def run_yarn_lint
-      warning("Running #{YARN_LINT}...")
-      return success_output(YARN_LINT, "") unless javascript_files_with_changes.length.positive?
+      return unless javascript_files_with_changes.length.positive?
 
+      warning("Running #{YARN_LINT}...")
       response = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
       result = response[:result]
       error = response[:error]
@@ -141,7 +151,6 @@ module Git
       messages = result.split("\n")
       success_output(YARN_LINT, "#{messages[0]} - #{messages[-1]}")
     end
-    # rubocop:enable Metrics/AbcSize
 
     def javascript_files_with_changes
       result = git("status")[:result]
@@ -149,6 +158,15 @@ module Git
         split("\n").
         map(&:strip).
         grep(/^modified:.+\.js(x?)$/).
+        map { |text| "#{pci_path}/#{text.gsub(/^modified:\s+/, '')}" }
+    end
+
+    def ruby_files_with_changes
+      result = git("status")[:result]
+      result.
+        split("\n").
+        map(&:strip).
+        grep(/^modified:.+\.rb$/).
         map { |text| "#{pci_path}/#{text.gsub(/^modified:\s+/, '')}" }
     end
 

@@ -2,6 +2,7 @@
 
 require "dry/inflector"
 require "pathname"
+require "byebug"
 require_relative "branch"
 require_relative "commit"
 
@@ -22,14 +23,13 @@ module Git
     end
 
     def self.validate_work
-      instance = new
-      instance.run_checks! if instance.checkable_file_changes?
+      new.run_checks!
     end
 
     def initialize
       super
       @branch = Branch.new
-      @force =  ENV.fetch("FORCE", false)
+      @force =  force?
     end
 
     def run
@@ -86,7 +86,7 @@ module Git
     end
 
     def run_brakeman
-      return unless ruby_files_with_changes.length.positive?
+      return unless ruby_files_with_changes.length.positive? || force
 
       warning("Running #{BRAKEMAN}...")
       result = cmd("#{pci_path}/bin/brakeman #{pci_path}")[:result]
@@ -99,7 +99,7 @@ module Git
 
     # rubocop:disable Metrics/AbcSize
     def run_rubocop
-      return unless ruby_files_with_changes.length.positive?
+      return unless ruby_files_with_changes.length.positive? || force
 
       warning("Running #{RUBOCOP}...")
       result = cmd("#{pci_path}/bin/rubocop")[:result]
@@ -172,6 +172,10 @@ module Git
 
     def relative_path_to_pci
       Pathname.new(".").relative_path_from(Pathname.new(pci_path)).to_s
+    end
+
+    def force?
+      ARGV.include?("--force") || ARGV.include?("-f")
     end
   end
 end

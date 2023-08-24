@@ -33,20 +33,40 @@ module Git
 end
 ```
 
+### `Git::Base`
+Description: `Git::Base` is primarily used an abstract base class for other `Git` module classes to inherit from.
+
+Intended uses: Abstract parent class for other `Git` module classes.
+- Adds common methods to run git commands.
+- Adds basic global variables getter methods
+- Checks if globals.yml has necessary keys defined.
+
 ### `Git::Branch`
 Description: `Git::Branch` is primarily used for basic functionality surrounding `git branch` commands.
 
-Use: Instantiate a new branch object with `Git::Branch.new`.
+Intended uses:
+- Create a new branch based on `main`. This will get the most recent `main`, get user input to generate a branch name, bundle and yarn install, and migrate.
+- Prune branches based on matching patterns provided by the user.
 
-Public methods:
-- `.create_branch` - Driver code for creating a new branch with basic input from user.
-- `.prune` - Driver code for pruning local branches provided in the `ARGV` array.
-- `#current` - Returns the current branch name as a string.
-- `#valid_push?` - Returns whether or not the branch is the `main` branch.
-- `create_branch` - Instantiated driver code to run all the logic for `.create_branch`.
-- `#delete` - Deletes a single branch matching a substring.
-- `#prune` - Instantiated driver code to delete all branches matching the string patterns entered by the user.
-- `#checkout` - Executes `git checkout` to a single branch that matches a substring. It will not switch branches if there are multiple branches matching the substring.
-- `#main?` - Checks if the current branch is the `main` branch.
-- `#jira_pattern?` - Checks to see if the current branch name matches a particular pattern: "dev_initials-(pod|eci)-(Integer)(-optional-descriptor)"
+### `Git::Commit`
+Description: `Git::Commit` is primarily used for basic functionality surrounding `git commit` commands.
+
+Intended uses:
+- Commit all your current work by validating it first by running rubocop, brakeman, and eslint. Then getting the user's input for the commit subject and body message. In doing so, we then can create the commit. The commit message has the Jira link automatically added to it.
+- Amend will add all the current work and amend the last commit with no edit.
+
+### `Git::Push`
+Description: `Git::Push` is primarily used for basic functionality surrounding `git push` commands.
+
+Intended uses:
+- Can push, or force a push with a lease when including `--force` or `-f` flags, and before pushing, it will perform validation checks to make sure you're not pushing to `main` and run work validations like `brakeman`, `rubocop`, and `eslint`.
+- Amend and push will validate your changes, amend the last commit with all of your changes, and then force a push with a lease.
+- Or you can just run validation checks by themselves.
+
+### `Git::Reset`
+Description: `Git::Reset` is primarily used for basic functionality surrounding `git reset` commands.
+
+Intended uses:
+- Can automatically reset the current branch to the last commit.
+
 

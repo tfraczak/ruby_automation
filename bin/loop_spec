@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+require "open3"
+require "symbolized"
+require_relative "../lib/global_variables"
+require_relative "../lib/system_output"
+
+START_TIME = Time.now.to_f
+OUTPUT = $stdout
+
+def cmd(cmd_string)
+  %w(result error status).zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
+end
+
+def color(key)
+  GlobalVariables.dig(:colors, key)
+end
+
+def success(text)
+  OUTPUT.puts "#{color(:green)}--SUCCESS: #{text}#{color(:no_color)}"
+end
+
+def error(text)
+  OUTPUT.puts "#{color(:red)}--ERROR: #{text}#{color(:no_color)}"
+end
+
+def format_seed(response)
+  seed = response[:result].strip.split("\n").first.split(" ").last
+  seed + (" " * (5 - seed.length))
+end
+
+def elapsed_time_in_seconds
+  "%0.2f" % [(Time.now.to_f - START_TIME)]
+end
+
+file = ARGV.find { _1.match?(/^spec\//) }
+
+response = cmd "cd #{GlobalVariables[:pci_path]} && rspec #{file}"
+
+while response[:status].to_s.match?(/exit 0/)
+  success "Seed: #{format_seed(response)} - #{elapsed_time_in_seconds} s"
+  response = cmd "cd #{GlobalVariables[:pci_path]} && rspec #{file}"
+end
+
+OUTPUT.puts response[:result]
+error "Seed: #{format_seed(response)} - #{elapsed_time_in_seconds} s"

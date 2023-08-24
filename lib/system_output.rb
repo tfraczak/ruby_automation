@@ -3,7 +3,6 @@
 require "symbolized"
 require_relative "global_variables"
 
-# SystemOutput provides basic methods for terminal output
 module SystemOutput
   private
 

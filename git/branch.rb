@@ -3,7 +3,6 @@
 require_relative "base"
 
 module Git
-  # Branch is a class that handles basic branch related logic for git
   class Branch < Base
     def self.create_branch
       new.create_branch
@@ -167,8 +166,6 @@ module Git
       cmd "bundle check || bundle install"
       cmd "rails db:migrate"
       cmd "yarn install"
-      git "stash"
-      git "stash clear"
     end
   end
 end

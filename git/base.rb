@@ -7,7 +7,6 @@ require "dry-inflector"
 Dir[File.join(__dir__, "../lib", "*.rb")].each { |file| require_relative file }
 
 module Git
-  # Base class for other Git classes to inherit from
   class Base
     class MissingDevInitialsError < StandardError; end
     class MissingPatientCheckInPathError < StandardError; end

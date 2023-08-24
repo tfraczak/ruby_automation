@@ -4,7 +4,6 @@ require_relative "base"
 require_relative "branch"
 
 module Git
-  # The commit class is for auto generating commit messages.
   class Commit < Base
     def initialize
       super

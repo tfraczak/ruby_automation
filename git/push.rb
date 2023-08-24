@@ -7,7 +7,6 @@ require_relative "branch"
 require_relative "commit"
 
 module Git
-  # Git::Push is the logic used for anything related to pushing work
   class Push < Base
     BUNDLE = "bundle"
     BRAKEMAN = "brakeman"
@@ -113,7 +112,7 @@ module Git
     # rubocop:enable Metrics/AbcSize
 
     def push
-      response = git(force ? "push origin HEAD --force-with-lease" : "push origin HEAD")
+      response = git(force? ? "push origin HEAD --force-with-lease" : "push origin HEAD")
       if response[:error].match?(/GitHub found \d+ (vulnerabilities|vulnerability)/)
         warning_message = format_github_warning(response[:error])
         warning(warning_message)
@@ -175,7 +174,7 @@ module Git
     end
 
     def force?
-      ARGV.include?("--force") || ARGV.include?("-f")
+      @force || ARGV.include?("--force") || ARGV.include?("-f")
     end
   end
 end

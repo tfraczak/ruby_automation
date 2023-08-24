@@ -4,7 +4,6 @@ require_relative "base"
 require_relative "branch"
 
 module Git
-  # Git::Reset is for resetting to the previous commit
   class Reset < Base
     def self.reset_to_previous_commit
       new.reset_to_previous_commit

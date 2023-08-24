@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.2.2"
+ruby ">= 3.2.2"
 
 gem "brakeman"
-gem "byebug"
+gem "debug", ">= 1.0.0"
 gem "dry-inflector"
 gem "open3"
 gem "pathname"

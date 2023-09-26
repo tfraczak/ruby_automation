@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "open3"
-require "symbolized"
 require "dry-inflector"
+require "symbolized"
 
 Dir[File.join(__dir__, "../lib", "*.rb")].each { |file| require_relative file }
 

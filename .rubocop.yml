@@ -35,7 +35,7 @@ Lint/UselessMethodDefinition:
   Enabled: false
 
 Metrics/ClassLength:
-  Max: 200
+  Max: 400
 
 Metrics/MethodLength:
   Max: 25

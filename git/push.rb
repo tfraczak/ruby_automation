@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "dry/inflector"
+require "dry-inflector"
 require "pathname"
-require "byebug"
+require "debug"
 require_relative "branch"
 require_relative "commit"
 
@@ -11,6 +11,7 @@ module Git
     BUNDLE = "bundle"
     BRAKEMAN = "brakeman"
     RUBOCOP = "rubocop"
+    RSPEC = "rspec"
     YARN_LINT = "yarn lint"
 
     def self.call
@@ -44,6 +45,8 @@ module Git
     end
 
     def run_checks!
+      return if !force? && skip_validations?
+
       GlobalVariables[:checks].each { |check| send("run_#{check}") }
       all_checks_pass
     end
@@ -57,14 +60,14 @@ module Git
     attr_reader :branch, :force
 
     def success_output(check_name, message)
-      puts message unless message.empty?
+      puts message unless message&.empty?
       suffix = check_name == BUNDLE ? "complete" : "passed"
       success("#{inflector.humanize(check_name)} #{suffix}!")
       true
     end
 
     def error_output(check_name, message)
-      puts message unless message.empty?
+      puts message unless message&.empty?
       error("#{inflector.humanize(check_name)} failed!", exit: true)
     end
 
@@ -73,52 +76,65 @@ module Git
       check = cmd("#{pci_path}/bin/bundle check")[:result]
       return success_output(BUNDLE, "") if check.match?(/The Gemfile's dependencies are satisfied/)
 
-      response = cmd("#{pci_path}/bin/bundle install")
-      install = response[:result]
-      error_message = response[:error]
+      output = cmd("#{pci_path}/bin/bundle install")
+      error_message = output[:error]
 
-      if install.match?(/Bundle complete!/)
-        success_output(BUNDLE, "")
-      else
-        error_output(BUNDLE, error_message)
-      end
+      error_output(BUNDLE, error_message) if error?(output)
+
+      success_output(BUNDLE, "")
     end
 
     def run_brakeman
-      return unless ruby_files_with_changes.length.positive? || force
+      return if !force? && skip_brakeman?
 
       warning("Running #{BRAKEMAN}...")
-      result = cmd("#{pci_path}/bin/brakeman #{pci_path}")[:result]
-      if result.match?(/No warnings found/)
-        success_output(BRAKEMAN, result.split("\n")[-1])
-      else
-        error_output(BRAKEMAN, result)
-      end
+      output = cmd("#{pci_path}/bin/brakeman")
+      result = output[:result]
+
+      error_output(BRAKEMAN, result) if error?(output)
+
+      success_output(BRAKEMAN, success_message(output, BRAKEMAN))
     end
 
-    # rubocop:disable Metrics/AbcSize
     def run_rubocop
-      return unless ruby_files_with_changes.length.positive? || force
+      return if !force? && skip_rubocop?
 
       warning("Running #{RUBOCOP}...")
-      result = cmd("#{pci_path}/bin/rubocop")[:result]
-      message = result.split("...")[-1]&.strip&.gsub(/^(\.|\^)+/, "")&.strip
-      if result.match?(/no offenses detected/)
-        success_output(RUBOCOP, message.split("\n")[0])
-      else
-        error_output(RUBOCOP, "\n#{message}")
-      end
+      output = cmd("#{pci_path}/bin/rubocop #{ruby_files_with_changes.join(' ')}")
+
+      error_output(RUBOCOP, rubocop_error_message(output)) if error?(output)
+
+      success_output(RUBOCOP, success_message(output, RUBOCOP))
     end
-    # rubocop:enable Metrics/AbcSize
+
+    def run_rspec
+      return if !force? && skip_rspec?
+
+      warning("Running #{RSPEC}...")
+      output = exec_rspec
+
+      error_output(RSPEC, rspec_error_message(output)) if error?(output)
+
+      success_output(RSPEC, success_message(output, RSPEC))
+    end
+
+    def exec_rspec
+      if ruby_files_with_changes.empty?
+        file_text = files_to_run_for_rspec.join(" ")
+      else
+        file_text = "spec/models spec/services spec/controllers"
+      end
+      cmd("RUBYOPT=\"-W0\" #{pci_path}/bin/rspec #{file_text}")
+    end
 
     def push
-      response = git(force? ? "push origin HEAD --force-with-lease" : "push origin HEAD")
-      if response[:error].match?(/GitHub found \d+ (vulnerabilities|vulnerability)/)
-        warning_message = format_github_warning(response[:error])
+      output = git(force? ? "push origin HEAD --force-with-lease" : "push origin HEAD")
+      if output[:error].match?(/GitHub found \d+ (vulnerabilities|vulnerability)/)
+        warning_message = format_github_warning(output[:error])
         warning(warning_message)
       end
       # need to find a way to check for an error when a push fails
-      result = response[:result].chomp.strip
+      result = output[:result].chomp.strip
       output.puts result unless result.empty?
       success("Pushed work!")
     end
@@ -139,16 +155,15 @@ module Git
     end
 
     def run_yarn_lint
-      return unless javascript_files_with_changes.length.positive?
+      return if !force? && skip_lint?
 
       warning("Running #{YARN_LINT}...")
-      response = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
-      result = response[:result]
-      error = response[:error]
-      error_output(YARN_LINT, result) if error.match?(/error Command failed with exit code 1/)
+      output = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
+      result = output[:result]
 
-      messages = result.split("\n")
-      success_output(YARN_LINT, "#{messages[0]} - #{messages[-1]}")
+      error_output(YARN_LINT, result) if error?(output)
+
+      success_output(YARN_LINT, success_message(output, YARN_LINT))
     end
 
     def javascript_files_with_changes
@@ -169,12 +184,99 @@ module Git
         map { |text| "#{pci_path}/#{text.gsub(/^modified:\s+/, '')}" }
     end
 
+    def files_to_run_for_rspec
+      spec_files, app_files = ruby_files_with_changes.partition { _1.match?(%r{/spec/}) }
+      convert_to_unit_spec_files(app_files) + filter_non_runnable_spec_files(spec_files)
+    end
+
+    def convert_to_unit_spec_files(app_files)
+      app_files.
+        map { _1.gsub(%r{^#{pci_path}(/app)?}, "#{pci_path}/spec").gsub(/\.rb$/, "_spec.rb") }.
+        select { cmd("test -f #{_1}")[:status].to_s[-1] == "0" }.
+        uniq
+    end
+
+    def filter_non_runnable_spec_files(spec_files)
+      spec_files.reject { _1.match?(%r{^spec/(factories|support)}) }.uniq
+    end
+
     def relative_path_to_pci
       Pathname.new(".").relative_path_from(Pathname.new(pci_path)).to_s
     end
 
     def force?
       @force || ARGV.include?("--force") || ARGV.include?("-f")
+    end
+
+    def skip_validations?
+      ARGV.include?("--skip-validations") || ARGV.include?("--S")
+    end
+
+    def skip_rubocop?
+      ARGV.include?("--skip-rubocop") ||
+        ARGV.include?("-S") ||
+        ruby_files_with_changes.empty?
+    end
+
+    def skip_brakeman?
+      ARGV.include?("--skip-brakeman") ||
+        ARGV.include?("-S") ||
+        ruby_files_with_changes.empty?
+    end
+
+    def skip_rspec?
+      ARGV.include?("--skip-rspec") ||
+        ARGV.include?("-S") ||
+        ruby_files_with_changes.empty?
+    end
+
+    def skip_lint?
+      ARGV.include?("--skip-lint") ||
+        ARGV.include?("-S") ||
+        javascript_files_with_changes.empty?
+    end
+
+    def error?(output)
+      output[:status].to_s.split.last == "1"
+    end
+
+    def success_message(output, validation_name)
+      case validation_name
+      when RUBOCOP
+        rubocops_success_message(output)
+      when BRAKEMAN
+        brakeman_success_message(output)
+      when RSPEC
+        "rspec passed!"
+      when YARN_LINT
+        lint_message(output)
+      else
+        "Done!"
+      end
+    end
+
+    def rubocops_success_message(output)
+      output[:result].split("...")[-1]&.strip&.gsub(/^(\.|\^)+/, "")&.strip&.split("\n")&.first
+    end
+
+    def rubocop_error_message(output)
+      text = output[:result].split("...")[-1]&.strip&.gsub(/^(\.|\^)+/, "")&.strip
+      "\n#{text}\n\n"
+    end
+
+    def brakeman_success_message(output)
+      output[:result]&.split("\n")&.last
+    end
+
+    def rspec_error_message(output)
+      "\n#{output[:result]&.strip}\n\n"
+    end
+
+    def lint_message(output)
+      messages = output[:result]&.split("\n")
+      return "" unless messages
+
+      "#{messages.first} - #{messages.last}"
     end
   end
 end

@@ -2,6 +2,7 @@ checks:
   - bundle_install
   - brakeman
   - rubocop
+  - rspec
   - yarn_lint
 colors:
   no_color: "\e[0;0m"

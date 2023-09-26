@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+require_relative "../git/push"
+
+push = Git::Push.new
+
+puts push.send(:files_to_run_for_rspec).join(" ")
+
+push.send(:run_rspec)

@@ -45,7 +45,7 @@ module Git
     end
 
     def run_checks!
-      return if !force? && skip_validations?
+      return if skip_validations?
 
       GlobalVariables[:checks].each { |check| send("run_#{check}") }
       all_checks_pass
@@ -85,7 +85,7 @@ module Git
     end
 
     def run_brakeman
-      return if !force? && skip_brakeman?
+      return if skip_brakeman?
 
       warning("Running #{BRAKEMAN}...")
       output = cmd("#{pci_path}/bin/brakeman")
@@ -97,7 +97,7 @@ module Git
     end
 
     def run_rubocop
-      return if !force? && skip_rubocop?
+      return if skip_rubocop?
 
       warning("Running #{RUBOCOP}...")
       output = cmd("#{pci_path}/bin/rubocop #{ruby_files_with_changes.join(' ')}")
@@ -108,21 +108,23 @@ module Git
     end
 
     def run_rspec
-      return if !force? && skip_rspec?
+      return if skip_rspec?
 
-      warning("Running #{RSPEC}...")
       output = exec_rspec
 
       error_output(RSPEC, rspec_error_message(output)) if error?(output)
 
-      success_output(RSPEC, success_message(output, RSPEC))
+      success_output(RSPEC, success_message(output[:result], RSPEC))
     end
 
     def exec_rspec
       if ruby_files_with_changes.empty?
-        file_text = files_to_run_for_rspec.join(" ")
-      else
+        warning("Running #{RSPEC} on models, controllers, and services...")
         file_text = "spec/models spec/services spec/controllers"
+      else
+        files_word = files_to_run_for_rspec.length == 1 ? "file" : "files"
+        warning("Running #{RSPEC} on #{files_to_run_for_rspec.length} #{files_word}...")
+        file_text = files_to_run_for_rspec.join(" ")
       end
       cmd("RUBYOPT=\"-W0\" #{pci_path}/bin/rspec #{file_text}")
     end
@@ -155,7 +157,7 @@ module Git
     end
 
     def run_yarn_lint
-      return if !force? && skip_lint?
+      return if skip_lint?
 
       warning("Running #{YARN_LINT}...")
       output = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
@@ -185,8 +187,10 @@ module Git
     end
 
     def files_to_run_for_rspec
+      return @files_to_run_for_rspec unless @files_to_run_for_rspec.nil?
+
       spec_files, app_files = ruby_files_with_changes.partition { _1.match?(%r{/spec/}) }
-      convert_to_unit_spec_files(app_files) + filter_non_runnable_spec_files(spec_files)
+      @files_to_run_for_rspec = convert_to_unit_spec_files(app_files) + filter_non_runnable_spec_files(spec_files)
     end
 
     def convert_to_unit_spec_files(app_files)
@@ -209,7 +213,7 @@ module Git
     end
 
     def skip_validations?
-      ARGV.include?("--skip-validations") || ARGV.include?("--S")
+      ARGV.include?("--skip-validations") || ARGV.include?("-S")
     end
 
     def skip_rubocop?
@@ -247,7 +251,7 @@ module Git
       when BRAKEMAN
         brakeman_success_message(output)
       when RSPEC
-        "rspec passed!"
+        "no failing specs"
       when YARN_LINT
         lint_message(output)
       else

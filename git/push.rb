@@ -219,25 +219,25 @@ module Git
     def skip_rubocop?
       ARGV.include?("--skip-rubocop") ||
         ARGV.include?("-S") ||
-        ruby_files_with_changes.empty?
+        (!force? && ruby_files_with_changes.empty?)
     end
 
     def skip_brakeman?
       ARGV.include?("--skip-brakeman") ||
         ARGV.include?("-S") ||
-        ruby_files_with_changes.empty?
+        (!force? && ruby_files_with_changes.empty?)
     end
 
     def skip_rspec?
       ARGV.include?("--skip-rspec") ||
         ARGV.include?("-S") ||
-        ruby_files_with_changes.empty?
+        (!force? && ruby_files_with_changes.empty?)
     end
 
     def skip_lint?
       ARGV.include?("--skip-lint") ||
         ARGV.include?("-S") ||
-        javascript_files_with_changes.empty?
+        (!force? && javascript_files_with_changes.empty?)
     end
 
     def error?(output)
@@ -245,18 +245,12 @@ module Git
     end
 
     def success_message(output, validation_name)
-      case validation_name
-      when RUBOCOP
-        rubocops_success_message(output)
-      when BRAKEMAN
-        brakeman_success_message(output)
-      when RSPEC
-        "no failing specs"
-      when YARN_LINT
-        lint_message(output)
-      else
-        "Done!"
-      end
+      {
+        RUBOCOP => rubocops_success_message(output),
+        BRAKEMAN => brakeman_success_message(output),
+        RSPEC => "no failing specs",
+        YARN_LINT => lint_message(output),
+      }[validation_name] || "Done!"
     end
 
     def rubocops_success_message(output)
@@ -277,7 +271,7 @@ module Git
     end
 
     def lint_message(output)
-      messages = output[:result]&.split("\n")
+      messages = output[:result].strip.split("\n")
       return "" unless messages
 
       "#{messages.first} - #{messages.last}"

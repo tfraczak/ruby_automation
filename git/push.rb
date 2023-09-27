@@ -190,18 +190,17 @@ module Git
       return @files_to_run_for_rspec unless @files_to_run_for_rspec.nil?
 
       spec_files, app_files = ruby_files_with_changes.partition { _1.match?(%r{/spec/}) }
-      @files_to_run_for_rspec = convert_to_unit_spec_files(app_files) + filter_non_runnable_spec_files(spec_files)
+      @files_to_run_for_rspec = (convert_to_unit_spec_files(app_files) + filter_non_runnable_spec_files(spec_files)).uniq
     end
 
     def convert_to_unit_spec_files(app_files)
       app_files.
         map { _1.gsub(%r{^#{pci_path}(/app)?}, "#{pci_path}/spec").gsub(/\.rb$/, "_spec.rb") }.
-        select { cmd("test -f #{_1}")[:status].to_s[-1] == "0" }.
-        uniq
+        select { cmd("test -f #{_1}")[:status].to_s[-1] == "0" }
     end
 
     def filter_non_runnable_spec_files(spec_files)
-      spec_files.reject { _1.match?(/^spec\/(factories|support)/) }.uniq
+      spec_files.reject { _1.match?(/^spec\/(factories|support)/) }
     end
 
     def relative_path_to_pci

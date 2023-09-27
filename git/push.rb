@@ -114,7 +114,7 @@ module Git
 
       error_output(RSPEC, rspec_error_message(output)) if error?(output)
 
-      success_output(RSPEC, success_message(output[:result], RSPEC))
+      success_output(RSPEC, success_message(output, RSPEC))
     end
 
     def exec_rspec
@@ -246,14 +246,14 @@ module Git
 
     def success_message(output, validation_name)
       {
-        RUBOCOP => rubocops_success_message(output),
+        RUBOCOP => rubocop_success_message(output),
         BRAKEMAN => brakeman_success_message(output),
         RSPEC => "no failing specs",
         YARN_LINT => lint_message(output),
       }[validation_name] || "Done!"
     end
 
-    def rubocops_success_message(output)
+    def rubocop_success_message(output)
       output[:result].split("...")[-1]&.strip&.gsub(/^(\.|\^)+/, "")&.strip&.split("\n")&.first
     end
 

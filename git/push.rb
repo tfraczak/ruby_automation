@@ -120,7 +120,7 @@ module Git
     def exec_rspec
       if ruby_files_with_changes.empty?
         warning("Running #{RSPEC} on models, controllers, and services...")
-        file_text = "spec/models spec/services spec/controllers"
+        file_text = "spec/models spec/services"
       else
         files_word = files_to_run_for_rspec.length == 1 ? "file" : "files"
         warning("Running #{RSPEC} on #{files_to_run_for_rspec.length} #{files_word}...")
@@ -201,7 +201,7 @@ module Git
     end
 
     def filter_non_runnable_spec_files(spec_files)
-      spec_files.reject { _1.match?(%r{^spec/(factories|support)}) }.uniq
+      spec_files.reject { _1.match?(/^spec\/(factories|support)/) }.uniq
     end
 
     def relative_path_to_pci

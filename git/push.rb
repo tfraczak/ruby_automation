@@ -183,7 +183,8 @@ module Git
         split("\n").
         map(&:strip).
         grep(/^modified:.+\.rb$/).
-        map { |text| "#{pci_path}/#{text.gsub(/^modified:\s+/, '')}" }
+        map { "#{pci_path}/#{_1.gsub(/^modified:\s+/, '')}" }
+        .reject { _1.match?(/schema\.rb$/) }
     end
 
     def files_to_run_for_rspec
@@ -200,7 +201,7 @@ module Git
     end
 
     def filter_non_runnable_spec_files(spec_files)
-      spec_files.reject { _1.match?(/^spec\/(factories|support)/) }
+      spec_files.reject { _1.match?(/spec\/(factories|support)/) }
     end
 
     def relative_path_to_pci
@@ -230,7 +231,7 @@ module Git
     def skip_rspec?
       ARGV.include?("--skip-rspec") ||
         ARGV.include?("-S") ||
-        (!force? && ruby_files_with_changes.empty?)
+        (!force? && files_to_run_for_rspec.empty?)
     end
 
     def skip_lint?

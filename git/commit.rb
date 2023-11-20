@@ -131,11 +131,11 @@ module Git
     end
 
     def jira_link
-      "https://epion-health.atlassian.net/browse/#{pod_name}-#{jira_number}"
+      "https://healthsparq.atlassian.net/browse/#{pod_name}-#{jira_number}"
     end
 
     def commit_message
-      "#{subject}\n\n#{github_jira_link}\n\n#{message}\n\n#{jira_link}"
+      "#{subject}\n\n#{jira_link}\n\n#{message}"
     end
   end
 end

@@ -4,6 +4,7 @@ require "open3"
 require "symbolized"
 require_relative "../lib/global_variables"
 require_relative "../lib/system_output"
+require "debug"
 
 START_TIME = Time.now.to_f
 OUTPUT = $stdout
@@ -25,7 +26,7 @@ def error(text)
 end
 
 def format_seed(response)
-  seed = response[:result].strip.split("\n").first.split(" ").last
+  seed = response[:result].strip.split("\n").find { _1.match?(/Randomized with seed/) }.split(" ").last
   seed + (" " * (5 - seed.length))
 end
 

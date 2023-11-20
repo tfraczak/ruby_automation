@@ -40,6 +40,7 @@ module Git
     end
 
     def prune(*pattern_strings)
+      error("Please provide a pattern to match branches by", exit: true) if pattern_strings.empty?
       checkout_main
       pattern_strings.reject! { |str| str.match(/^#{main_branch_name}$/) }
       pattern = /#{pattern_strings.join('|')}/i

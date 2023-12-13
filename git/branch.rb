@@ -40,8 +40,9 @@ module Git
     end
 
     def prune(*pattern_strings)
-      error("Please provide a pattern to match branches by", exit: true) if pattern_strings.empty?
       checkout_main
+      return prune_merged_branches if pattern_strings.empty?
+
       pattern_strings.reject! { |str| str.match(/^#{main_branch_name}$/) }
       pattern = /#{pattern_strings.join('|')}/i
 
@@ -167,6 +168,31 @@ module Git
       cmd "bundle check || bundle install"
       cmd "rails db:migrate"
       cmd "yarn install"
+    end
+
+    def prune_merged_branches
+      branches_to_delete = branches.grep(Regexp.new(merged_branches))
+      return warning("No branches to delete", exit: true) if branches_to_delete.empty?
+
+      branches_to_delete.each { destroy_branch(_1) }
+
+      nil
+    end
+
+    def merged_branches
+      git("log")[:result].
+        split(/commit\s[A-Za-z0-9]+\s|\(HEAD \-\> main, origin\/main, origin\/HEAD\)/).
+        map(&:strip).
+        reject(&:empty?).
+        map { _1.split("\n") }.
+        map { _1.grep(/https\:\/\/(healthsparq|epion\-health).atlassian.net/)}.
+        reject(&:empty?).
+        flatten.
+        map { _1.match(/\d{4}/)&.[](0) }.
+        compact.
+        uniq.
+        sort { |a, b| a.to_i <=> b.to_i }.
+        join("|")
     end
   end
 end

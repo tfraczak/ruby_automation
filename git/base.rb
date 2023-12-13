@@ -3,6 +3,7 @@
 require "open3"
 require "dry-inflector"
 require "symbolized"
+require "debug"
 
 Dir[File.join(__dir__, "../lib", "*.rb")].each { |file| require_relative file }
 

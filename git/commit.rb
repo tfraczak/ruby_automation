@@ -66,6 +66,10 @@ module Git
       branch.current
     end
 
+    def continuation_branch?
+      branch_name.match?(/-cont$/)
+    end
+
     def validate_main_branch_commit!
       return unless branch.main?
 
@@ -134,8 +138,20 @@ module Git
       "https://healthsparq.atlassian.net/browse/#{pod_name}-#{jira_number}"
     end
 
+    def continued_text
+      "(cont.)" if continuation_branch?
+    end
+
+    def formatted_subject
+      "#{github_jira_link}: #{subject}"
+    end
+
     def commit_message
-      "#{subject}\n\n#{jira_link}\n\n#{message}"
+      [
+        ["#{pod_name}-#{jira_number}:", subject, continued_text].compact.join(" "),
+        ["\#\#\#", jira_link, continued_text].compact.join(" "),
+        message,
+      ].join("\n\n")
     end
   end
 end

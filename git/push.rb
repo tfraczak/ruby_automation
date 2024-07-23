@@ -47,7 +47,7 @@ module Git
     def run_checks!
       return if skip_validations?
 
-      GlobalVariables[:checks].each { |check| send("run_#{check}") }
+      GlobalVariables[:checks].each { |check| send(:"run_#{check}") }
       all_checks_pass
     end
 
@@ -73,10 +73,10 @@ module Git
 
     def run_bundle_install
       warning("Bundling...")
-      check = cmd("#{pci_path}/bin/bundle check")[:result]
+      check = cmd("#{project_path}/bin/bundle check")[:result]
       return success_output(BUNDLE, "") if check.match?(/The Gemfile's dependencies are satisfied/)
 
-      output = cmd("#{pci_path}/bin/bundle install")
+      output = cmd("#{project_path}/bin/bundle install")
       error_message = output[:error]
 
       error_output(BUNDLE, error_message) if error?(output)
@@ -88,7 +88,7 @@ module Git
       return if skip_brakeman?
 
       warning("Running #{BRAKEMAN}...")
-      output = cmd("#{pci_path}/bin/brakeman")
+      output = cmd("#{project_path}/bin/brakeman")
       result = output[:result]
 
       error_output(BRAKEMAN, result) if error?(output)
@@ -100,7 +100,7 @@ module Git
       return if skip_rubocop?
 
       warning("Running #{RUBOCOP}...")
-      output = cmd("#{pci_path}/bin/rubocop #{ruby_files_with_changes.join(' ')}")
+      output = cmd("#{project_path}/bin/rubocop #{ruby_files_with_changes.join(' ')}")
 
       error_output(RUBOCOP, rubocop_error_message(output)) if error?(output)
 
@@ -126,7 +126,7 @@ module Git
         warning("Running #{RSPEC} on #{files_to_run_for_rspec.length} #{files_word}...")
         file_text = files_to_run_for_rspec.join(" ")
       end
-      cmd("RUBYOPT=\"-W0\" #{pci_path}/bin/rspec #{file_text}")
+      cmd("RUBYOPT=\"-W0\" #{project_path}/bin/rspec #{file_text}")
     end
 
     def push
@@ -160,7 +160,7 @@ module Git
       return if skip_lint?
 
       warning("Running #{YARN_LINT}...")
-      output = cmd("#{pci_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
+      output = cmd("#{project_path}/bin/yarn lint #{javascript_files_with_changes.join(' ')}")
       result = output[:result]
 
       error_output(YARN_LINT, result) if error?(output)
@@ -174,7 +174,7 @@ module Git
         split("\n").
         map(&:strip).
         grep(/^modified:.+\.js(x?)$/).
-        map { |text| "#{pci_path}/#{text.gsub(/^modified:\s+/, '')}" }
+        map { |text| "#{project_path}/#{text.gsub(/^modified:\s+/, '')}" }
     end
 
     def ruby_files_with_changes
@@ -183,7 +183,7 @@ module Git
         split("\n").
         map(&:strip).
         grep(/^modified:.+\.rb$/).
-        map { "#{pci_path}/#{_1.gsub(/^modified:\s+/, '')}" }
+        map { "#{project_path}/#{_1.gsub(/^modified:\s+/, '')}" }
         .reject { _1.match?(/schema\.rb$/) }
     end
 
@@ -196,7 +196,7 @@ module Git
 
     def convert_to_unit_spec_files(app_files)
       app_files.
-        map { _1.gsub(%r{^#{pci_path}(/app)?}, "#{pci_path}/spec").gsub(/\.rb$/, "_spec.rb") }.
+        map { _1.gsub(%r{^#{project_path}(/app)?}, "#{project_path}/spec").gsub(/\.rb$/, "_spec.rb") }.
         select { cmd("test -f #{_1}")[:status].to_s[-1] == "0" }
     end
 
@@ -205,7 +205,7 @@ module Git
     end
 
     def relative_path_to_pci
-      Pathname.new(".").relative_path_from(Pathname.new(pci_path)).to_s
+      Pathname.new(".").relative_path_from(Pathname.new(project_path)).to_s
     end
 
     def force?

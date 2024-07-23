@@ -11,7 +11,7 @@ colors:
   yellow: "\e[0;33m"
 dev_initials: tf
 main_branch: main
-pci_path: ~/code/patient-check-in
+project_path: ~/code/babylist-web
 pod_names:
-  - eci
-  - pod
+  - gm
+  - rg

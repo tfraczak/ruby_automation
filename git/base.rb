@@ -19,7 +19,7 @@ module Git
       validate_dev_initials
       @input = $stdin
       @output = $stdout
-      @pci_path = GlobalVariables["pci_path"]
+      @project_path = GlobalVariables["project_path"]
     end
 
     def inspect
@@ -28,14 +28,14 @@ module Git
 
     private
 
-    attr_reader :input, :pci_path, :output
+    attr_reader :input, :project_path, :output
 
     def inflector
       @inflector ||= Dry::Inflector.new
     end
 
     def git(command)
-      cmd("git -C #{pci_path} #{command}")
+      cmd("git -C #{project_path} #{command}")
     end
 
     def dev_initials
@@ -59,9 +59,9 @@ module Git
     end
 
     def validate_project_path
-      return unless GlobalVariables[:pci_path].nil?
+      return unless GlobalVariables[:project_path].nil?
 
-      raise MissingPatientCheckInPathError, yml_file_error_text("Patient Check-In project path", :pci_path)
+      raise MissingPatientCheckInPathError, yml_file_error_text("Patient Check-In project path", :project_path)
     end
 
     def validate_dev_initials

@@ -36,11 +36,11 @@ end
 
 file = ARGV.find { _1.match?(/^spec\//) }
 
-response = cmd "cd #{GlobalVariables[:pci_path]} && rspec #{file}"
+response = cmd "cd #{GlobalVariables[:project_path]} && rspec #{file}"
 
 while response[:status].to_s.match?(/exit 0/)
   success "Seed: #{format_seed(response)} - #{elapsed_time_in_seconds} s"
-  response = cmd "cd #{GlobalVariables[:pci_path]} && rspec #{file}"
+  response = cmd "cd #{GlobalVariables[:project_path]} && rspec #{file}"
 end
 
 OUTPUT.puts response[:result]

@@ -1,4 +1,4 @@
-PCI_PATH=~/code/patient-check-in
+PROJECT_PATH=~/code/babylist-web
 NC='\033[0;0m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -11,9 +11,9 @@ BOLD_UNDERLINE_WHITE='\033[1;4;37m'
 SIDEKIQ_COUNT=1
 SIDEKIQ_MAXMEM_MB=400
 
-alias cdPCI="cd $PCI_PATH"
+alias cdProject="cd $PROJECT_PATH"
 alias editFunctions="code ~/.zsh_functions"
-alias codePatientCheckIn="cdPCI && code ."
+alias codePatientCheckIn="cdProject && code ."
 alias zoom="echo 'zoom_link' | pbcopy"
 alias startServices="brew services start postgresql && brew services start redis && echo -e '${GREEN}--Services started${NC}'"
 alias wipCommit="git add . && git commit -m 'WIP COMMIT'"
@@ -224,15 +224,15 @@ startSidekiq() {
         return -1
     fi
 
-    cdPCI && \
+    cdProject && \
     clear && \
     SIDEKIQ_COUNT=$SIDEKIQ_COUNT SIDEKIQ_MAXMEM_MB=$SIDEKIQ_MAXMEM_MB SIDEKIQ_PRELOAD= bundle exec sidekiqswarm -e development -C ./config/sidekiq-$1.yml && \
 }
 
-alias startRailsServer="cdPCI && clear && RUBY_YJIT_ENABLE=1 bundle exec rails s -p 3000"
-alias startWebpack="cdPCI && clear && bin/shakapacker-dev-server"
-alias startSidekiqInternal="cdPCI && clear && startSidekiq internal"
-alias startSidekiqCheckin="cdPCI && clear && startSidekiq checkin"
+alias startRailsServer="cdProject && clear && RUBY_YJIT_ENABLE=1 bundle exec rails s -p 3000"
+alias startWebpack="cdProject && clear && bin/shakapacker-dev-server"
+alias startSidekiqInternal="cdProject && clear && startSidekiq internal"
+alias startSidekiqCheckin="cdProject && clear && startSidekiq checkin"
 
 openItermTab() {
     if ! [[ $1 ]]
@@ -266,7 +266,7 @@ startSidekiqs() {
 }
 
 runDev() {
-    cdPCI && \
+    cdProject && \
     bundle install && \
     yarn install && \
     bundle exec rails db:migrate && \

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "base"
+require_relative 'base'
 
 module Git
   class Branch < Base
@@ -13,7 +13,7 @@ module Git
     end
 
     def current
-      git("rev-parse --abbrev-ref HEAD")[:result].chomp.strip
+      git('rev-parse --abbrev-ref HEAD')[:result].chomp.strip
     end
 
     def valid_push?
@@ -22,7 +22,7 @@ module Git
 
     def create_branch
       checkout_main
-      git "pull"
+      git 'pull'
       ask_for_pod_name
       ask_for_jira_number
       ask_for_descriptor
@@ -44,67 +44,42 @@ module Git
       return prune_merged_branches if pattern_strings.empty?
 
       pattern_strings.reject! { |str| str.match(/^#{main_branch_name}$/) }
-      pattern = /#{pattern_strings.join('|')}/i
-
-      branches.
-        grep(pattern).
-        each { |branch_name| destroy_branch(branch_name) }
-
-      nil
-    end
-
-    def checkout(sub_string)
-      found_branches = find_branches(sub_string)
-      too_many_branches_validation(found_branches)
-      switching_with_changes_validation
-
-      branch_name = found_branches[0]
-      result = git("checkout #{branch_name}")[:error]
-      success(result)
-    end
-
-    def main?
-      current.match?(/^#{main_branch_name}$/)
-    end
-
-    def jira_pattern?
-      current.match?(/^#{dev_initials}-(#{pod_names.join("|")})-[0-9]+(-[a-zA-Z0-9]+((-[a-zA-Z0-9]+)+)?)?$/i)
+      pattern_strings.each do |pattern|
+        branches = find_branches(pattern)
+        branches.each { |branch| destroy_branch(branch) }
+      end
     end
 
     private
 
-    attr_reader :pod_name, :jira_number, :descriptor
+    def checkout_main
+      git "checkout #{main_branch_name}"
+    end
 
-    def too_many_branches_validation(found_branches)
-      return if found_branches.length == 1
+    def main?
+      current == main_branch_name
+    end
 
-      return error("No branches with that value", exit: true) if found_branches.empty?
-
-      output.puts found_branches
-      error("Found more than 1 branch with that value", exit: true)
+    def main_branch_name
+      'main'
     end
 
     def find_branches(sub_string)
-      branches.select { |branch_name| branch_name.include?(sub_string) }.map(&:chomp)
+      git("branch --list '*#{sub_string}*'")[:result].split("\n").map(&:strip)
     end
 
-    def branches
-      git("branch")[:result].
-        split("\n").
-        map { _1.strip.gsub(/^\*\s+/, "") }.
-        reject { _1.match?(/^#{main_branch_name}$/) }
+    def too_many_branches_validation(found_branches)
+      return unless found_branches.size > 1
+
+      error("Too many branches found: #{found_branches.join(', ')}")
     end
 
-    def checkout_main
-      return if main?
+    def destroy_branch(branch)
+      git "branch -D #{branch}"
+    end
 
-      switching_with_changes_validation
-
-      response = git "checkout #{main_branch_name}"
-      return unless response[:error]
-      return if response[:error].match?(/Switched to branch '#{main_branch_name}'|Already on '#{main_branch_name}'/)
-
-      error("Checking out 'main' branch failed!", exit: true)
+    def prune_merged_branches
+      git 'branch --merged | grep -v "\\*\\|main" | xargs -n 1 git branch -d'
     end
 
     def changes?
@@ -112,7 +87,7 @@ module Git
     end
 
     def ask_for_pod_name
-      @pod_name = ""
+      @pod_name = ''
 
       until valid_pod_name?
         output.print "Enter pod name (#{pod_text}): "
@@ -122,28 +97,28 @@ module Git
     end
 
     def pod_text
-      pod_names.length > 2 ? "#{pod_names[0...-1].join(', ')}, or #{pod_names[-1]}" : pod_names.join(" or ")
+      pod_names.length > 2 ? "#{pod_names[0...-1].join(', ')}, or #{pod_names[-1]}" : pod_names.join(' or ')
     end
 
     def ask_for_jira_number
-      @jira_number = ""
+      @jira_number = ''
 
       until valid_jira_number?
-        output.print "Enter jira number: "
+        output.print 'Enter jira number: '
         @jira_number = input.gets.chomp.strip
-        error("Must be an integer") unless valid_jira_number?
+        error('Must be an integer') unless valid_jira_number?
       end
     end
 
     def ask_for_descriptor
-      @descriptor = ""
-      output.print "Enter branch descriptor: "
+      @descriptor = ''
+      output.print 'Enter branch descriptor: '
       @descriptor = input.gets.chomp.strip
-      @descriptor = @descriptor.gsub(" ", "-")
+      @descriptor = @descriptor.gsub(' ', '-')
     end
 
     def valid_pod_name?
-      pod_name.match?(/^(#{pod_names.join("|")})$/i)
+      pod_name.match?(/^(#{pod_names.join('|')})$/i)
     end
 
     def valid_jira_number?
@@ -153,46 +128,6 @@ module Git
     def build_branch
       result = git("checkout -b #{dev_initials}-#{pod_name.downcase}-#{jira_number}-#{descriptor}")[:error].chomp
       success(result)
-    end
-
-    def destroy_branch(name)
-      result = git("branch -D #{name}")[:result].chomp
-      success(result)
-    end
-
-    def switching_with_changes_validation
-      error("Cannot switch branches, please commit or stash changes", exit: true) if changes?
-    end
-
-    def setup_branch
-      cmd "bundle check || bundle install"
-      cmd "rails db:migrate"
-      cmd "yarn install"
-    end
-
-    def prune_merged_branches
-      branches_to_delete = branches.grep(Regexp.new(merged_branches))
-      return warning("No branches to delete", exit: true) if branches_to_delete.empty?
-
-      branches_to_delete.each { destroy_branch(_1) }
-
-      nil
-    end
-
-    def merged_branches
-      git("log")[:result].
-        split(/commit\s[A-Za-z0-9]+\s|\(HEAD \-\> main, origin\/main, origin\/HEAD\)/).
-        map(&:strip).
-        reject(&:empty?).
-        map { _1.split("\n") }.
-        map { _1.grep(/https\:\/\/(healthsparq|epion\-health).atlassian.net/)}.
-        reject(&:empty?).
-        flatten.
-        map { _1.match(/\d{4}/)&.[](0) }.
-        compact.
-        uniq.
-        sort { |a, b| a.to_i <=> b.to_i }.
-        join("|")
     end
   end
 end

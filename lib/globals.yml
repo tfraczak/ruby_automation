@@ -15,3 +15,4 @@ project_path: ~/code/babylist-web
 pod_names:
   - gm
   - rg
+  - smol

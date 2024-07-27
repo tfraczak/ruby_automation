@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "open3"
-require "dry-inflector"
-require "symbolized"
-require "debug"
+require 'open3'
+require 'dry-inflector'
+require 'symbolized'
+require 'debug'
 
-Dir[File.join(__dir__, "../lib", "*.rb")].each { |file| require_relative file }
+Dir[File.join(__dir__, '../lib', '*.rb')].each { |file| require_relative file }
 
 module Git
   class Base
@@ -19,11 +19,11 @@ module Git
       validate_dev_initials
       @input = $stdin
       @output = $stdout
-      @project_path = GlobalVariables["project_path"]
+      @project_path = GlobalVariables['project_path']
     end
 
     def inspect
-      super.split("@").first.strip
+      super.split('@').first.strip
     end
 
     private
@@ -43,35 +43,7 @@ module Git
     end
 
     def cmd(cmd_string)
-      %w(result error status).zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
-    end
-
-    def status
-      git "status"
-    end
-
-    def main_branch_name
-      GlobalVariables[:main_branch]
-    end
-
-    def pod_names
-      @pod_names ||= GlobalVariables[:pod_names].sort
-    end
-
-    def validate_project_path
-      return unless GlobalVariables[:project_path].nil?
-
-      raise MissingPatientCheckInPathError, yml_file_error_text("Patient Check-In project path", :project_path)
-    end
-
-    def validate_dev_initials
-      return unless GlobalVariables[:dev_initials].nil?
-
-      raise MissingDevInitialsError, yml_file_error_text("initials", :dev_initials)
-    end
-
-    def yml_file_error_text(text, key)
-      "Must define your #{text} at \"#{key}\" in the yaml file: ./lib/globals.yml"
+      %w[result error status].zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
     end
   end
 end

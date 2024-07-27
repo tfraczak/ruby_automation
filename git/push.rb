@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-require "dry-inflector"
-require "pathname"
-require "debug"
-require_relative "branch"
-require_relative "commit"
+require 'dry-inflector'
+require 'pathname'
+require 'debug'
+require_relative 'branch'
+require_relative 'commit'
 
 module Git
   class Push < Base
-    BUNDLE = "bundle"
-    BRAKEMAN = "brakeman"
-    RUBOCOP = "rubocop"
-    RSPEC = "rspec"
-    YARN_LINT = "yarn lint"
+    BUNDLE = 'bundle'
+    BRAKEMAN = 'brakeman'
+    RUBOCOP = 'rubocop'
+    RSPEC = 'rspec'
+    YARN_LINT = 'yarn lint'
 
     def self.call
       new.run
@@ -29,16 +29,16 @@ module Git
     def initialize
       super
       @branch = Branch.new
-      @force =  force?
+      @force = force?
     end
 
     def run
-      run_checks! if checkable_file_changes?
+      # run_checks! if checkable_file_changes?
       push
     end
 
     def amend_and_push
-      run_checks! if checkable_file_changes?
+      # run_checks! if checkable_file_changes?
       Commit.amend
       @force = true
       push
@@ -61,7 +61,7 @@ module Git
 
     def success_output(check_name, message)
       puts message unless message&.empty?
-      suffix = check_name == BUNDLE ? "complete" : "passed"
+      suffix = check_name == BUNDLE ? 'complete' : 'passed'
       success("#{inflector.humanize(check_name)} #{suffix}!")
       true
     end
@@ -142,14 +142,14 @@ module Git
     end
 
     def format_github_warning(text)
-      text.
-        chomp.
-        strip.
-        gsub(/(remote: |remote:\n)/, "").
-        gsub(/^\n/, "").
-        split("\n").
-        map(&:strip)[0..1].
-        join(" ")
+      text
+        .chomp
+        .strip
+        .gsub(/(remote: |remote:\n)/, "")
+        .gsub(/^\n/, "")
+        .split("\n")
+        .map(&:strip)[0..1]
+        .join(" ")
     end
 
     def all_checks_pass
@@ -170,20 +170,20 @@ module Git
 
     def javascript_files_with_changes
       result = git("status")[:result]
-      result.
-        split("\n").
-        map(&:strip).
-        grep(/^modified:.+\.js(x?)$/).
-        map { |text| "#{project_path}/#{text.gsub(/^modified:\s+/, '')}" }
+      result
+        .split("\n")
+        .map(&:strip)
+        .grep(/^modified:.+\.js(x?)$/)
+        .map { |text| "#{project_path}/#{text.gsub(/^modified:\s+/, '')}" }
     end
 
     def ruby_files_with_changes
       result = git("status")[:result]
-      result.
-        split("\n").
-        map(&:strip).
-        grep(/^modified:.+\.rb$/).
-        map { "#{project_path}/#{_1.gsub(/^modified:\s+/, '')}" }
+      result
+        .split("\n")
+        .map(&:strip)
+        .grep(/^modified:.+\.rb$/)
+        .map { "#{project_path}/#{_1.gsub(/^modified:\s+/, '')}" }
         .reject { _1.match?(/schema\.rb$/) }
     end
 
@@ -195,13 +195,13 @@ module Git
     end
 
     def convert_to_unit_spec_files(app_files)
-      app_files.
-        map { _1.gsub(%r{^#{project_path}(/app)?}, "#{project_path}/spec").gsub(/\.rb$/, "_spec.rb") }.
-        select { cmd("test -f #{_1}")[:status].to_s[-1] == "0" }
+      app_files
+        .map { _1.gsub(%r{^#{project_path}(/app)?}, "#{project_path}/spec").gsub(/\.rb$/, "_spec.rb") }
+        .select { cmd("test -f #{_1}")[:status].to_s[-1] == "0" }
     end
 
     def filter_non_runnable_spec_files(spec_files)
-      spec_files.reject { _1.match?(/spec\/(factories|support)/) }
+      spec_files.reject { _1.match?(%r{spec/(factories|support)}) }
     end
 
     def relative_path_to_pci

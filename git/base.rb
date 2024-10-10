@@ -10,7 +10,7 @@ Dir[File.join(__dir__, '../lib', '*.rb')].each { |file| require_relative file }
 module Git
   class Base
     class MissingDevInitialsError < StandardError; end
-    class MissingPatientCheckInPathError < StandardError; end
+    class MissingProjectPathError < StandardError; end
 
     include SystemOutput
 
@@ -19,7 +19,7 @@ module Git
       validate_dev_initials
       @input = $stdin
       @output = $stdout
-      @project_path = GlobalVariables['project_path']
+      @project_path = GlobalVariables[:project_path]
     end
 
     def inspect
@@ -42,8 +42,34 @@ module Git
       @dev_initials ||= GlobalVariables[:dev_initials]
     end
 
+    def pod_names
+      @pod_names ||= GlobalVariables[:pod_names]
+    end
+
     def cmd(cmd_string)
       %w[result error status].zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
+    end
+
+    def success?(response)
+      response[:status].to_s[-1] == '0'
+    end
+
+    def multiline_gets
+      all_text = []
+      text = input.gets.chomp.strip
+      while text != '$end'
+        all_text << text
+        text = input.gets.chomp.strip
+      end
+      all_text.join("\n")
+    end
+
+    def validate_project_path
+      raise MissingProjectPathError, 'Project path is missing in globals.yml' if GlobalVariables['project_path'].nil?
+    end
+
+    def validate_dev_initials
+      raise MissingDevInitialsError, 'Dev initials are missing in globals.yml' if GlobalVariables['dev_initials'].nil?
     end
   end
 end

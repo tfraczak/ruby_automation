@@ -23,10 +23,9 @@ module Git
     def create_branch
       checkout_main
       git 'pull'
-      ask_for_pod_name
+      ask_for_team_name
       ask_for_jira_number
       ask_for_descriptor
-      setup_branch
       build_branch
     end
 
@@ -50,15 +49,21 @@ module Git
       end
     end
 
-    private
+    def main?
+      current == main_branch_name
+    end
+
+    def jira_pattern?
+      current.match?(/^#{dev_initials}-(#{pod_names.join('|')})-\d+-\w+((-\w+)+)?$/)
+    end
 
     def checkout_main
       git "checkout #{main_branch_name}"
     end
 
-    def main?
-      current == main_branch_name
-    end
+    private
+
+    attr_reader :pod_name, :jira_number, :descriptor
 
     def main_branch_name
       'main'
@@ -86,7 +91,7 @@ module Git
       status[:result].match?(/no changes added to commit/)
     end
 
-    def ask_for_pod_name
+    def ask_for_team_name
       @pod_name = ''
 
       until valid_pod_name?
@@ -103,6 +108,9 @@ module Git
     def ask_for_jira_number
       @jira_number = ''
 
+      output.print 'Enter jira number: '
+      @jira_number = input.gets.chomp.strip
+      error('Must be an integer') unless valid_jira_number?
       until valid_jira_number?
         output.print 'Enter jira number: '
         @jira_number = input.gets.chomp.strip
@@ -122,11 +130,17 @@ module Git
     end
 
     def valid_jira_number?
-      jira_number.match?(/^\d+$/i)
+      pod_name == 'rg' || jira_number.match?(/^\d+$/)
     end
 
     def build_branch
-      result = git("checkout -b #{dev_initials}-#{pod_name.downcase}-#{jira_number}-#{descriptor}")[:error].chomp
+      branch_name = [
+        dev_initials,
+        pod_name.downcase,
+        jira_number.empty? ? nil : jira_number,
+        descriptor
+      ].compact.join('-')
+      result = git("checkout -b #{branch_name}")[:error].chomp
       success(result)
     end
   end

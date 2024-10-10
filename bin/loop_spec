@@ -34,17 +34,17 @@ def elapsed_time_in_seconds
   "%0.2f" % [(Time.now.to_f - START_TIME)]
 end
 
-def run_spec(file)
-  cmd "cd #{GlobalVariables[:project_path]} && bundle exec rspec #{file}"
+def run_spec(files)
+  cmd "cd #{GlobalVariables[:project_path]} && bundle exec rspec #{files}"
 end
 
-file = ARGV.find { _1.match?(%r{^spec/}) }
+files = ARGV.select { _1.match?(/_spec\.rb/) }.join(' ')
 
-response = run_spec(file)
+response = run_spec(files)
 
 while response[:status].to_s.match?(/exit 0/)
   success "Seed: #{format_seed(response)} - #{elapsed_time_in_seconds} s"
-  response = run_spec(file)
+  response = run_spec(files)
 end
 
 OUTPUT.puts response[:result]

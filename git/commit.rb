@@ -21,6 +21,10 @@ module Git
       new.amend
     end
 
+    def self.wip!
+      new.wip!
+    end
+
     def run
       run_validations!
       handle_subject
@@ -31,6 +35,16 @@ module Git
     def amend
       git_add_all
       amend_with_no_edit
+    end
+
+    def wip!
+      git_add_all
+      response = git "commit -m \"WIP: #{branch_name}\""
+      result = response[:result]
+      error_message = response[:error]
+      error(error_message, exit: true) unless error_message.empty?
+      output.puts result
+      success('Commited as a work in progress')
     end
 
     private
@@ -58,7 +72,6 @@ module Git
 
     def run_validations!
       validate_main_branch_commit!
-      validate_branch_name_pattern!
       validate_git_status!
     end
 
@@ -76,12 +89,6 @@ module Git
       error("Cannot commit to '#{main_branch_name}' branch", exit: true)
     end
 
-    def validate_branch_name_pattern!
-      return if branch.jira_pattern?
-
-      error("Branch name must follow pattern: #{dev_initials}-(#{pod_names.join('|')})-###-descriptor", exit: true)
-    end
-
     def validate_git_status!
       status_result = git('status')[:result]
       return unless status_result.match?(/nothing to commit/)
@@ -95,10 +102,11 @@ module Git
         ask_for_subject
         validate_subject!
       end
+      output.puts
     end
 
     def ask_for_subject
-      output.print 'Subject: '
+      output.print "#{color(:yellow)}Subject:#{color(:no_color)} "
       @subject = input.gets.chomp.strip
     end
 
@@ -113,65 +121,78 @@ module Git
       "Subject is #{diff} #{char} too long, must be 80 characters or less"
     end
 
+    # rubocop:disable Metrics/AbcSize
     def handle_message
       messages = []
       messages << ask_for_why
+      output.puts
       messages << ask_for_what
+      output.puts
       messages << ask_for_solution_verification
+      output.puts
       messages << ask_for_next_steps
-      @message = messages.join("\n")
+      output.puts
+      @message = messages.join("\n\n")
     end
+    # rubocop:enable Metrics/AbcSize
 
     def ask_for_why
-      output.print 'Why?: '
-      text = input.gets.chomp.strip
-      text.empty? ? "Why?\nn/a" : "Why?\n#{text}"
+      yellow_question 'Why?:'
+      text = multiline_gets
+      header_text = "## Why?\n\n"
+      header_text += "### #{github_jira_link}\n\n" if branch.jira_pattern?
+      text.empty? ? "#{header_text}\n\nn/a" : "#{header_text}\n\n#{text}"
     end
 
     def ask_for_what
-      output.print 'What?: '
-      text = input.gets.chomp.strip
-      text.empty? ? "What?\nn/a" : "What?\n#{text}"
+      yellow_question 'What?:'
+      text = multiline_gets
+      text.empty? ? "## What?\n\nn/a" : "## What?\n\n#{text}"
     end
 
     def ask_for_solution_verification
-      output.print 'How did you verify this code solves the problem?: '
-      text = input.gets.chomp.strip
+      yellow_question 'How did you verify this code solves the problem?:'
+      text = multiline_gets
       if text.empty?
-        "How did you verify this code solves the problem?\n#{text}"
+        "## How did you verify this code solves the problem?\n\nn/a"
       else
-        "How did you verify this code solves the problem?\nn/a"
+        "## How did you verify this code solves the problem?\n\n#{text}"
       end
     end
 
     def ask_for_next_steps
-      output.print 'Next Steps: '
-      text = input.gets.chomp.strip
-      text.empty? ? "Next Steps\nn/a" : "Next Steps\n#{text}"
+      yellow_question 'Next Steps:'
+      text = multiline_gets
+      text.empty? ? "## Next Steps\n\nn/a" : "## Next Steps\n\n#{text}"
     end
 
     def github_jira_link
-      "\#\#\# [#{pod_name}-#{jira_number}]\(#{jira_link}\)"
+      "[#{pod_name}-#{jira_number}]\(#{jira_link}\)"
     end
 
     def jira_link
       "https://babylist.atlassian.net/browse/#{pod_name}-#{jira_number}"
     end
 
-    def continued_text
-      '(cont.)' if continuation_branch?
-    end
-
     def formatted_subject
-      "#{github_jira_link}: #{subject}"
+      if jira_number.empty?
+        subject
+      else
+        "#{pod_name}-#{jira_number}: #{subject}"
+      end
     end
 
     def commit_message
       [
-        ["#{pod_name}-#{jira_number}:", subject, continued_text].compact.join(' '),
-        [github_jira_link, continued_text].compact.join(' '),
-        message,
+        formatted_subject,
+        "\n\n",
+        message
       ].join("\n\n")
+    end
+
+    def yellow_question(text)
+      output.puts "#{color(:yellow)}#{text}#{color(:no_color)}"
+      output.puts
     end
   end
 end

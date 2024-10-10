@@ -81,6 +81,7 @@ module Git
 
     def destroy_branch(branch)
       git "branch -D #{branch}"
+      success("Branch #{branch} deleted")
     end
 
     def prune_merged_branches

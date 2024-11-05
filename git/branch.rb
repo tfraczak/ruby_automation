@@ -54,7 +54,7 @@ module Git
     end
 
     def jira_pattern?
-      current.match?(/^#{dev_initials}-(#{pod_names.join('|')})-\d+-\w+((-\w+)+)?$/)
+      current.match?(/^#{dev_initials}-(#{project_names.join('|')})-\d+-\w+((-\w+)+)?$/)
     end
 
     def checkout_main
@@ -63,7 +63,7 @@ module Git
 
     private
 
-    attr_reader :pod_name, :jira_number, :descriptor
+    attr_reader :project_name, :jira_number, :descriptor
 
     def find_branches(sub_string)
       git("branch --list '*#{sub_string}*'")[:result].split("\n").map(&:strip)
@@ -89,17 +89,19 @@ module Git
     end
 
     def ask_for_team_name
-      @pod_name = ""
+      @project_name = ""
 
-      until valid_pod_name?
-        output.print "Enter pod name (#{pod_text}): "
-        @pod_name = input.gets.chomp.strip
-        error("Must be #{pod_text}") unless valid_pod_name?
+      until valid_project_name?
+        output.print "Enter project name (#{project_text}): "
+        @project_name = input.gets.chomp.strip
+        error("Must be #{project_text}") unless valid_project_name?
       end
     end
 
-    def pod_text
-      pod_names.length > 2 ? "#{pod_names[0...-1].join(', ')}, or #{pod_names[-1]}" : pod_names.join(" or ")
+    def project_text
+      return "#{project_names[0...-1].join(', ')}, or #{project_names[-1]}" if project_names.length > 2
+
+      project_names.join(" or ")
     end
 
     def ask_for_jira_number
@@ -118,22 +120,21 @@ module Git
     def ask_for_descriptor
       @descriptor = ""
       output.print "Enter branch descriptor: "
-      @descriptor = input.gets.chomp.strip
-      @descriptor = @descriptor.gsub(" ", "-")
+      @descriptor = input.gets.chomp.strip.gsub(" ", "-")
     end
 
-    def valid_pod_name?
-      pod_name.match?(/^(#{pod_names.join('|')})$/i)
+    def valid_project_name?
+      project_name.match?(/^(#{project_names.join('|')})$/i)
     end
 
     def valid_jira_number?
-      pod_name == "rg" || jira_number.match?(/^\d+$/)
+      project_name == "rg" || jira_number.match?(/^\d+$/)
     end
 
     def build_branch
       branch_name = [
         dev_initials,
-        pod_name.downcase,
+        project_name.downcase,
         jira_number.empty? ? nil : jira_number,
         descriptor
       ].compact.join("-")

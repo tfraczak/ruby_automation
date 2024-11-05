@@ -42,8 +42,8 @@ module Git
       @dev_initials ||= GlobalVariables[:dev_initials]
     end
 
-    def pod_names
-      @pod_names ||= GlobalVariables[:pod_names]
+    def project_names
+      @project_names ||= GlobalVariables[:project_names]
     end
 
     def main_branch_name

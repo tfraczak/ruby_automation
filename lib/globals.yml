@@ -12,7 +12,7 @@ colors:
 dev_initials: tf
 main_branch: main
 project_path: ~/code/babylist-web
-pod_names:
+project_names:
   - cs
   - rg
   - smol

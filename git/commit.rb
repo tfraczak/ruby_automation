@@ -9,7 +9,7 @@ module Git
       super
       @branch = Branch.new
       split_branch = branch_name.split("-")
-      @pod_name = split_branch[1].upcase
+      @project_name = split_branch[1].upcase
       @jira_number = split_branch[2]
     end
 
@@ -49,7 +49,7 @@ module Git
 
     private
 
-    attr_reader :branch, :jira_number, :message, :pod_name, :subject
+    attr_reader :branch, :jira_number, :message, :project_name, :subject
 
     def commit
       git_add_all
@@ -138,7 +138,7 @@ module Git
       yellow_question "Why?:"
       text = multiline_gets
       header_text = "## Why?\n\n"
-      header_text += "### #{pod_name}-#{jira_number}\n\n" if branch.jira_pattern?
+      header_text += "### #{project_name}-#{jira_number}\n\n" if branch.jira_pattern?
       text.empty? ? "#{header_text}\n\nn/a" : "#{header_text}\n\n#{text}"
     end
 
@@ -165,18 +165,18 @@ module Git
     end
 
     def github_jira_link
-      "[#{pod_name}-#{jira_number}]\(#{jira_link}\)"
+      "[#{project_name}-#{jira_number}]\(#{jira_link}\)"
     end
 
     def jira_link
-      "https://babylist.atlassian.net/browse/#{pod_name}-#{jira_number}"
+      "https://babylist.atlassian.net/browse/#{project_name}-#{jira_number}"
     end
 
     def formatted_subject
       if jira_number.empty?
         subject
       else
-        "#{pod_name}-#{jira_number}: #{subject}"
+        "#{project_name}-#{jira_number}: #{subject}"
       end
     end
 

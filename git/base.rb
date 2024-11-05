@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'open3'
-require 'dry-inflector'
-require 'symbolized'
-require 'debug'
+require "open3"
+require "dry-inflector"
+require "symbolized"
+require "debug"
 
-Dir[File.join(__dir__, '../lib', '*.rb')].each { |file| require_relative file }
+Dir[File.join(__dir__, "../lib", "*.rb")].each { |file| require_relative file }
 
 module Git
   class Base
@@ -23,7 +23,7 @@ module Git
     end
 
     def inspect
-      super.split('@').first.strip
+      super.split("@").first.strip
     end
 
     private
@@ -46,18 +46,22 @@ module Git
       @pod_names ||= GlobalVariables[:pod_names]
     end
 
+    def main_branch_name
+      @main_branch_name ||= GlobalVariables[:main_branch]
+    end
+
     def cmd(cmd_string)
       %w[result error status].zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
     end
 
     def success?(response)
-      response[:status].to_s[-1] == '0'
+      response[:status].success?
     end
 
     def multiline_gets
       all_text = []
       text = input.gets.chomp.strip
-      while text != '$end'
+      while text != "$end"
         all_text << text
         text = input.gets.chomp.strip
       end
@@ -65,11 +69,11 @@ module Git
     end
 
     def validate_project_path
-      raise MissingProjectPathError, 'Project path is missing in globals.yml' if GlobalVariables['project_path'].nil?
+      raise MissingProjectPathError, "Project path is missing in globals.yml" if GlobalVariables["project_path"].nil?
     end
 
     def validate_dev_initials
-      raise MissingDevInitialsError, 'Dev initials are missing in globals.yml' if GlobalVariables['dev_initials'].nil?
+      raise MissingDevInitialsError, "Dev initials are missing in globals.yml" if GlobalVariables["dev_initials"].nil?
     end
   end
 end

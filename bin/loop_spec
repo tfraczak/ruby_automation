@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require "open3"
 require "symbolized"
@@ -10,7 +11,7 @@ START_TIME = Time.now.to_f
 OUTPUT = $stdout
 
 def cmd(cmd_string)
-  %w(result error status).zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
+  %w[result error status].zip(Open3.capture3(cmd_string)).to_h.to_symbolized_hash
 end
 
 def color(key)
@@ -31,18 +32,18 @@ def format_seed(response)
 end
 
 def elapsed_time_in_seconds
-  "%0.2f" % [(Time.now.to_f - START_TIME)]
+  format("%0.2f", (Time.now.to_f - START_TIME))
 end
 
 def run_spec(files)
   cmd "cd #{GlobalVariables[:project_path]} && bundle exec rspec #{files}"
 end
 
-files = ARGV.select { _1.match?(/_spec\.rb/) }.join(' ')
+files = ARGV.select { _1.match?(/_spec\.rb/) }.join(" ")
 
 response = run_spec(files)
 
-while response[:status].to_s.match?(/exit 0/)
+while response[:status].success?
   success "Seed: #{format_seed(response)} - #{elapsed_time_in_seconds} s"
   response = run_spec(files)
 end

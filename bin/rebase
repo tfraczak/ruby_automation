@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require_relative '../git/rebase'
+require_relative "../git/rebase"
 
 Git::Rebase.main

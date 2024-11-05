@@ -1,8 +1,14 @@
 Style/Documentation:
   Enabled: false
 
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
 Style/TrailingCommaInArrayLiteral:
   Enabled: false
 
 Metrics/ClassLength:
   Max: 250
+
+Metrics/AbcSize:
+  Max: 50

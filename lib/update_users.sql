@@ -1,1 +1,0 @@
-UPDATE users SET is_admin = true where email like '%@babylist.com';

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'base'
+require_relative "base"
 
 module Git
   class Branch < Base
@@ -13,7 +13,7 @@ module Git
     end
 
     def current
-      git('rev-parse --abbrev-ref HEAD')[:result].chomp.strip
+      git("rev-parse --abbrev-ref HEAD")[:result].chomp.strip
     end
 
     def valid_push?
@@ -22,7 +22,7 @@ module Git
 
     def create_branch
       checkout_main
-      git 'pull'
+      git "pull"
       ask_for_team_name
       ask_for_jira_number
       ask_for_descriptor
@@ -65,10 +65,6 @@ module Git
 
     attr_reader :pod_name, :jira_number, :descriptor
 
-    def main_branch_name
-      'main'
-    end
-
     def find_branches(sub_string)
       git("branch --list '*#{sub_string}*'")[:result].split("\n").map(&:strip)
     end
@@ -93,7 +89,7 @@ module Git
     end
 
     def ask_for_team_name
-      @pod_name = ''
+      @pod_name = ""
 
       until valid_pod_name?
         output.print "Enter pod name (#{pod_text}): "
@@ -103,27 +99,27 @@ module Git
     end
 
     def pod_text
-      pod_names.length > 2 ? "#{pod_names[0...-1].join(', ')}, or #{pod_names[-1]}" : pod_names.join(' or ')
+      pod_names.length > 2 ? "#{pod_names[0...-1].join(', ')}, or #{pod_names[-1]}" : pod_names.join(" or ")
     end
 
     def ask_for_jira_number
-      @jira_number = ''
+      @jira_number = ""
 
-      output.print 'Enter jira number: '
+      output.print "Enter jira number: "
       @jira_number = input.gets.chomp.strip
-      error('Must be an integer') unless valid_jira_number?
+      error("Must be an integer") unless valid_jira_number?
       until valid_jira_number?
-        output.print 'Enter jira number: '
+        output.print "Enter jira number: "
         @jira_number = input.gets.chomp.strip
-        error('Must be an integer') unless valid_jira_number?
+        error("Must be an integer") unless valid_jira_number?
       end
     end
 
     def ask_for_descriptor
-      @descriptor = ''
-      output.print 'Enter branch descriptor: '
+      @descriptor = ""
+      output.print "Enter branch descriptor: "
       @descriptor = input.gets.chomp.strip
-      @descriptor = @descriptor.gsub(' ', '-')
+      @descriptor = @descriptor.gsub(" ", "-")
     end
 
     def valid_pod_name?
@@ -131,7 +127,7 @@ module Git
     end
 
     def valid_jira_number?
-      pod_name == 'rg' || jira_number.match?(/^\d+$/)
+      pod_name == "rg" || jira_number.match?(/^\d+$/)
     end
 
     def build_branch
@@ -140,7 +136,7 @@ module Git
         pod_name.downcase,
         jira_number.empty? ? nil : jira_number,
         descriptor
-      ].compact.join('-')
+      ].compact.join("-")
       result = git("checkout -b #{branch_name}")[:error].chomp
       success(result)
     end

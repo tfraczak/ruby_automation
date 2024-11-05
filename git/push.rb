@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-require 'dry-inflector'
-require 'pathname'
-require 'debug'
-require_relative 'branch'
-require_relative 'commit'
+require "dry-inflector"
+require "pathname"
+require "debug"
+require_relative "branch"
+require_relative "commit"
 
 module Git
   class Push < Base
-    BUNDLE = 'bundle'
-    BRAKEMAN = 'brakeman'
-    RUBOCOP = 'rubocop'
-    RSPEC = 'rspec'
-    YARN_LINT = 'yarn lint'
+    BUNDLE = "bundle"
+    BRAKEMAN = "brakeman"
+    RUBOCOP = "rubocop"
+    RSPEC = "rspec"
+    YARN_LINT = "yarn lint"
 
     def self.call
       new.run
@@ -61,7 +61,7 @@ module Git
 
     def success_output(check_name, message)
       puts message unless message&.empty?
-      suffix = check_name == BUNDLE ? 'complete' : 'passed'
+      suffix = check_name == BUNDLE ? "complete" : "passed"
       success("#{inflector.humanize(check_name)} #{suffix}!")
       true
     end
@@ -249,7 +249,7 @@ module Git
         RUBOCOP => rubocop_success_message(output),
         BRAKEMAN => brakeman_success_message(output),
         RSPEC => "no failing specs",
-        YARN_LINT => lint_message(output),
+        YARN_LINT => lint_message(output)
       }[validation_name] || "Done!"
     end
 

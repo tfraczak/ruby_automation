@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-require_relative 'branch'
-require_relative 'commit'
+require_relative "base"
+require_relative "branch"
+require_relative "commit"
 
 module Git
   class Rebase < Base
@@ -18,12 +18,15 @@ module Git
 
     def main
       Commit.wip unless nothing_to_commit?
-      git 'fetch origin main:main'
+      output.puts "Updating and fetching '#{main_branch_name}'"
+      git "checkout #{main_branch_name}"
+      git "pull"
       git "checkout #{branch_name}"
-      response = git 'rebase main --update-refs'
+      output.puts "Rebasing '#{branch_name}' on '#{main_branch_name}'"
+      response = git "rebase #{main_branch_name}"
       error(response[:error], exit: true) unless success?(response)
       output_result_from(response)
-      success("Rebased successfully on 'main'")
+      success "Rebased '#{branch_name}' successfully on '#{main_branch_name}'"
     end
 
     private
@@ -31,8 +34,8 @@ module Git
     attr_reader :branch, :branch_name
 
     def nothing_to_commit?
-      status_result = git('status')[:result]
-      status_result.include?('nothing to commit, working tree clean')
+      status_result = git("status")[:result]
+      status_result.include?("nothing to commit, working tree clean")
     end
 
     def output_result_from(response)
